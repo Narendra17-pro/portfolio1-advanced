@@ -40,16 +40,20 @@ class ProjectController extends Controller
      *
      * @return string
      */
-    public function actionIndex()
-    {
-        $searchModel = new ProjectSearch();
-        $dataProvider = $searchModel->search($this->request->queryParams);
+   public function actionIndex()
+{
+    $searchModel = new ProjectSearch();
+    $dataProvider = $searchModel->search($this->request->queryParams);
 
-        return $this->render('index', [
-            'searchModel' => $searchModel,
-            'dataProvider' => $dataProvider,
-        ]);
-    }
+    // Create a new instance of the Project model for the modal form
+    $model = new Project();
+
+    return $this->render('index', [
+        'searchModel' => $searchModel,
+        'dataProvider' => $dataProvider,
+        'model' => $model, // Pass the model to the view
+    ]);
+}
 
     /**
      * Displays a single project model.
@@ -70,36 +74,36 @@ class ProjectController extends Controller
      * @return string|\yii\web\Response
      */
     public function actionCreate()
-{
-    $model = new Project();
-
-    if ($this->request->isPost) {
-        // Get the uploaded file instance
-        $model->imageFile = UploadedFile::getInstance($model, 'image_path');
-
-        // Load other form data into the model
-        if ($model->load($this->request->post()) && $model->validate()) {
-            // Save the project first
-            if ($model->save()) {
-                // Save the image and link it to the project
-                if ($model->imageFile) {
-                    $model->saveImage();
+    {
+        $model = new Project();
+    
+        if (Yii::$app->request->isPost) {
+            $model->imageFile = UploadedFile::getInstance($model, 'image_path');
+            if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+                if ($model->save()) {
+                    if ($model->imageFile) {
+                        $model->saveImage();
+                    }
+                    Yii::$app->session->setFlash('success', 'Successfully saved');
+                    return $this->redirect(['index']);
                 }
-
-                Yii::$app->session->setFlash('success', 'Successfully saved');
-                return $this->redirect(['view', 'id' => $model->id]);
+            } else {
+                Yii::$app->session->setFlash('error', 'Validation failed');
             }
-        } else {
-            Yii::$app->session->setFlash('error', 'Validation failed');
         }
-    } else {
-        $model->loadDefaultValues();
+    
+        // Check for AJAX request to render only the form
+        if (Yii::$app->request->isAjax) {
+            return $this->renderAjax('_form', [
+                'model' => $model,
+            ]);
+        }
+    
+        return $this->render('create', [
+            'model' => $model,
+        ]);
     }
-
-    return $this->render('create', [
-        'model' => $model,
-    ]);
-}
+    
 
 
 
